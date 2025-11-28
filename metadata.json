@@ -1,0 +1,5 @@
+{
+  "name": "FrameCut AI",
+  "description": "A professional video frame extraction tool with AI analysis capabilities. Upload videos, extract high-quality frames, batch sample scenes, and analyze content using Gemini AI.",
+  "requestFramePermissions": []
+}

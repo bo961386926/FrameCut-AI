@@ -1,0 +1,336 @@
+import React, { useState, useEffect } from 'react';
+import JSZip from 'jszip';
+import { VideoEditor } from './components/VideoEditor';
+import { FrameCard } from './components/FrameCard';
+import { ExtractedFrame, VideoMeta } from './types';
+import { 
+  Film, Upload, Trash2, Download, 
+  CheckSquare, Square, XCircle, Archive,
+  Sun, Moon, LayoutGrid
+} from './components/Icons';
+import { analyzeFrame } from './services/geminiService';
+
+const App = () => {
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
+  const [videoMeta, setVideoMeta] = useState<VideoMeta | null>(null);
+  const [frames, setFrames] = useState<ExtractedFrame[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isZipping, setIsZipping] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  // Initialize theme from system or local storage
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const handleFileUpload = (e: any) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setVideoSrc(url);
+      setFrames([]); // Clear frames on new video
+      setSelectedIds([]);
+      setVideoMeta(null);
+    }
+  };
+
+  const handleFrameCaptured = (frame: ExtractedFrame) => {
+    setFrames(prev => [...prev, frame]);
+  };
+
+  const handleDeleteFrame = (id: string) => {
+    setFrames(prev => prev.filter(f => f.id !== id));
+    setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    
+    // Capture the current selection in a Set for O(1) lookups
+    const idsToDelete = new Set(selectedIds);
+    
+    if (window.confirm(`Are you sure you want to delete ${idsToDelete.size} selected frames?`)) {
+      // Filter out frames that are in the delete set
+      setFrames(currentFrames => currentFrames.filter(frame => !idsToDelete.has(frame.id)));
+      setSelectedIds([]);
+    }
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm('Are you sure you want to clear all extracted frames?')) {
+      setFrames([]);
+      setSelectedIds([]);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) 
+        ? prev.filter(sid => sid !== id) 
+        : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === frames.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(frames.map(f => f.id));
+    }
+  };
+
+  const handleDownloadSelected = async () => {
+    if (selectedIds.length === 0) return;
+    setIsZipping(true);
+
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder("extracted_frames");
+      
+      const selectedFrames = frames.filter(f => selectedIds.includes(f.id));
+      
+      selectedFrames.forEach((frame) => {
+        const base64Data = frame.dataUrl.split(',')[1];
+        
+        const mins = Math.floor(frame.timestamp / 60).toString().padStart(2, '0');
+        const secs = Math.floor(frame.timestamp % 60).toString().padStart(2, '0');
+        const ms = Math.floor((frame.timestamp % 1) * 100).toString().padStart(2, '0');
+        const filename = `frame_${mins}-${secs}-${ms}.png`;
+        
+        if (folder) {
+          folder.file(filename, base64Data, { base64: true });
+        }
+      });
+
+      const content = await zip.generateAsync({ type: "blob" });
+      
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `frames_archive_${new Date().toISOString().slice(0,10)}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+    } catch (error) {
+      console.error("Failed to zip files:", error);
+      alert("Failed to create zip file.");
+    } finally {
+      setIsZipping(false);
+    }
+  };
+
+  const handleAnalyzeFrame = async (id: string) => {
+    const frame = frames.find(f => f.id === id);
+    if (!frame) return;
+
+    setFrames(prev => prev.map(f => f.id === id ? { ...f, isAnalyzing: true } : f));
+    
+    const analysis = await analyzeFrame(frame.dataUrl);
+    
+    setFrames(prev => prev.map(f => f.id === id ? { ...f, isAnalyzing: false, analysis } : f));
+  };
+
+  return (
+    <div class={`flex h-screen w-screen overflow-hidden font-sans transition-colors duration-300 ${theme === 'dark' ? 'dark bg-dark-950' : 'bg-gray-50'}`}>
+      
+      {/* Background Pattern */}
+      <div class="fixed inset-0 pointer-events-none z-0 bg-grid-pattern opacity-100"></div>
+
+      {/* Sidebar */}
+      <div class={`${isSidebarOpen ? 'w-80' : 'w-20'} relative z-20 flex-shrink-0 bg-white/80 dark:bg-dark-900/80 backdrop-blur-xl border-r border-gray-200 dark:border-white/5 transition-all duration-300 flex flex-col shadow-xl`}>
+        {/* App Logo */}
+        <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-white/5">
+          <Film class="text-brand-500 mr-2" />
+          {isSidebarOpen && <span class="font-bold text-xl tracking-tight text-slate-800 dark:text-slate-100">FrameCut<span class="text-brand-500">.AI</span></span>}
+        </div>
+
+        {/* Video Upload Section */}
+        <div class="p-4">
+          <label class={`
+            flex flex-col items-center justify-center w-full rounded-2xl border-2 border-dashed border-gray-300 dark:border-white/10 
+            hover:border-brand-500 dark:hover:border-brand-500 hover:bg-brand-50/50 dark:hover:bg-white/5 transition-all cursor-pointer group
+            ${isSidebarOpen ? 'h-36' : 'h-16'}
+          `}>
+            <input type="file" class="hidden" accept="video/*" onChange={handleFileUpload} />
+            <div class={`p-3 rounded-full bg-gray-100 dark:bg-white/5 group-hover:scale-110 transition-transform ${!isSidebarOpen && 'p-2'}`}>
+              <Upload class="text-gray-400 group-hover:text-brand-500 transition-colors" size={isSidebarOpen ? 24 : 20} />
+            </div>
+            {isSidebarOpen && <span class="mt-3 text-xs font-medium text-gray-500 dark:text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400">Click to Upload Video</span>}
+          </label>
+        </div>
+
+        {/* Info Section */}
+        {isSidebarOpen && videoMeta && (
+          <div class="px-6 py-4 mx-4 mb-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5">
+            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Signal Data</h3>
+            <div class="space-y-2 text-xs font-mono text-gray-500 dark:text-slate-400">
+              <p class="flex justify-between"><span>DURATION</span> <span class="text-gray-800 dark:text-slate-200">{videoMeta.duration.toFixed(2)}s</span></p>
+              <p class="flex justify-between"><span>DIMENSIONS</span> <span class="text-gray-800 dark:text-slate-200">{videoMeta.width}x{videoMeta.height}</span></p>
+              <p class="flex justify-between"><span>FRAMES</span> <span class="text-brand-500">{frames.length}</span></p>
+            </div>
+          </div>
+        )}
+
+        <div class="flex-1" />
+        
+        {/* Bottom Actions */}
+        <div class="p-4 border-t border-gray-200 dark:border-white/5 flex items-center justify-between">
+          <button 
+            onClick={toggleTheme}
+            class="p-2 rounded-lg text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+            title="Toggle Theme"
+          >
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+
+          <button 
+             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+             class="p-2 rounded-lg text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-xs font-medium"
+          >
+            {isSidebarOpen ? 'Collapse' : '»'}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div class="flex-1 flex flex-col min-w-0 h-full relative z-10">
+        
+        {/* Editor Section */}
+        <div class="flex-1 p-4 md:p-6 min-h-0 flex flex-col">
+          <VideoEditor 
+            videoSrc={videoSrc}
+            onVideoLoaded={setVideoMeta}
+            onFrameCaptured={handleFrameCaptured}
+            onBatchComplete={() => {}}
+          />
+        </div>
+
+        {/* Frames Gallery Panel */}
+        <div class="h-[35vh] bg-white/90 dark:bg-dark-900/90 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 flex flex-col min-h-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] transition-colors">
+          
+          {/* Gallery Toolbar */}
+          <div class="h-16 flex items-center justify-between px-6 border-b border-gray-200 dark:border-white/5 flex-shrink-0">
+            
+            {/* Left: Title & Count */}
+            <div class="flex items-center gap-4">
+              <div class="flex items-center gap-3">
+                <div class="p-1.5 rounded bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400">
+                  <LayoutGrid size={16} />
+                </div>
+                <div>
+                  <h2 class="font-semibold text-sm text-gray-800 dark:text-slate-200">Frame Gallery</h2>
+                  <p class="text-[10px] text-gray-500 dark:text-slate-500">Manage captured snapshots</p>
+                </div>
+              </div>
+              
+              {/* Select All Checkbox */}
+              {frames.length > 0 && (
+                <>
+                  <div class="h-6 w-px bg-gray-200 dark:bg-white/10 mx-2"></div>
+                  <button 
+                    onClick={toggleSelectAll}
+                    class="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+                  >
+                    {selectedIds.length === frames.length && frames.length > 0 ? (
+                      <CheckSquare size={16} class="text-brand-500" />
+                    ) : (
+                      <Square size={16} />
+                    )}
+                    <span class="hidden sm:inline">
+                      {selectedIds.length === frames.length ? 'Deselect All' : 'Select All'}
+                    </span>
+                  </button>
+                </>
+              )}
+            </div>
+            
+            {/* Right: Actions */}
+            <div class="flex items-center gap-2">
+              {selectedIds.length > 0 ? (
+                <div class="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <span class="text-xs font-mono text-gray-500 dark:text-slate-500 mr-2 hidden sm:inline">
+                    <span class="text-brand-500 font-bold">{selectedIds.length}</span> SELECTED
+                  </span>
+                  
+                  <button 
+                    onClick={handleDownloadSelected}
+                    disabled={isZipping}
+                    class="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-lg shadow-brand-500/20 disabled:opacity-70"
+                  >
+                    {isZipping ? (
+                      <span class="animate-spin">⏳</span>
+                    ) : (
+                      <Archive size={14} />
+                    )}
+                    Download
+                  </button>
+                  
+                  <button 
+                    onClick={handleDeleteSelected}
+                    class="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+
+                  <button 
+                    onClick={() => setSelectedIds([])}
+                    class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors"
+                    title="Clear Selection"
+                  >
+                    <XCircle size={18} />
+                  </button>
+                </div>
+              ) : (
+                frames.length > 0 && (
+                  <button 
+                    onClick={handleClearAll}
+                    class="text-xs font-medium text-gray-500 hover:text-red-500 flex items-center gap-1.5 px-3 py-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                  >
+                    <Trash2 size={14} /> Clear All
+                  </button>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* Gallery Grid */}
+          <div class="flex-1 overflow-y-auto p-6 scroll-smooth bg-gray-50/50 dark:bg-black/20">
+            {frames.length === 0 ? (
+              <div class="h-full flex flex-col items-center justify-center text-gray-400 dark:text-slate-600">
+                <div class="w-16 h-16 mb-4 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center">
+                  <LayoutGrid size={32} class="opacity-50" />
+                </div>
+                <p class="font-medium">Gallery Empty</p>
+                <p class="text-xs mt-1 opacity-70">Extract frames to populate the grid</p>
+              </div>
+            ) : (
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 pb-20">
+                {frames.map((frame) => (
+                  <FrameCard 
+                    key={frame.id} 
+                    frame={frame} 
+                    isSelected={selectedIds.includes(frame.id)}
+                    onToggleSelect={toggleSelect}
+                    onDelete={handleDeleteFrame}
+                    onAnalyze={handleAnalyzeFrame}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default App;
