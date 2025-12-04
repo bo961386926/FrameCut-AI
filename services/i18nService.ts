@@ -1,3 +1,4 @@
+declare var chrome: any;
 import { Language, I18nTexts } from '../types';
 
 export const translations: Record<Language, I18nTexts> = {
@@ -115,8 +116,23 @@ export const translations: Record<Language, I18nTexts> = {
 };
 
 export const detectLanguage = async (): Promise<Language> => {
+  // 1. Try Chrome Extension API
+  if (typeof chrome !== 'undefined' && chrome.i18n && typeof chrome.i18n.getUILanguage === 'function') {
+    try {
+      const uiLang = chrome.i18n.getUILanguage();
+      if (uiLang.toLowerCase().includes('cn') || uiLang.toLowerCase().includes('hans')) {
+        return 'zh-CN';
+      } else if (uiLang.toLowerCase().includes('tw') || uiLang.toLowerCase().includes('hk')) {
+        return 'zh-TW';
+      }
+      // If it's a generic 'zh', we might default to CN or TW. Let's stick to browser standard check below.
+    } catch (e) {
+      console.log('Chrome I18n API check failed', e);
+    }
+  }
+
   try {
-    // 1. Try to check IP
+    // 2. Try to check IP
     const response = await fetch('https://api.country.is');
     if (response.ok) {
       const data = await response.json();
@@ -134,7 +150,7 @@ export const detectLanguage = async (): Promise<Language> => {
     console.warn('IP geolocation failed, falling back to browser language', error);
   }
 
-  // 2. Fallback to Browser Language
+  // 3. Fallback to Browser Language
   const browserLang = navigator.language;
   if (browserLang.toLowerCase().includes('zh')) {
      if (browserLang.toLowerCase().includes('cn') || browserLang.toLowerCase().includes('hans')) {

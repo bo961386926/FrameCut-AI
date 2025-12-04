@@ -252,42 +252,42 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
   };
 
   return (
-    <div class="flex flex-col h-full bg-white dark:bg-black rounded-2xl overflow-hidden shadow-2xl ring-1 ring-gray-900/5 dark:ring-white/10 transition-colors">
+    <div className="flex flex-col h-full bg-white dark:bg-black rounded-2xl overflow-hidden shadow-2xl ring-1 ring-gray-900/5 dark:ring-white/10 transition-colors">
       
       {/* Video Player Area */}
-      <div class="relative flex-1 bg-gray-100 dark:bg-neutral-900 flex items-center justify-center overflow-hidden group">
+      <div className="relative flex-1 bg-gray-100 dark:bg-neutral-900 flex items-center justify-center overflow-hidden group">
         
         {/* Grid Overlay for Tech feel */}
-        <div class="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(0,0,0,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.1)_1px,transparent_1px)] bg-[size:20px_20px] dark:bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)]"></div>
+        <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(0,0,0,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.1)_1px,transparent_1px)] bg-[size:20px_20px] dark:bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)]"></div>
 
         {videoSrc ? (
           <video
             ref={videoRef}
             src={videoSrc}
-            class="max-h-full max-w-full shadow-lg z-10"
+            className="max-h-full max-w-full shadow-lg z-10"
             onLoadedData={handleLoadedData}
             onTimeUpdate={handleTimeUpdate}
             onEnded={() => setIsPlaying(false)}
           />
         ) : (
-          <div class="text-gray-400 dark:text-gray-600 flex flex-col items-center z-10">
-            <div class="p-6 rounded-full bg-gray-200/50 dark:bg-white/5 mb-4 backdrop-blur-sm">
-              <Upload size={48} class="opacity-50" />
+          <div className="text-gray-400 dark:text-gray-600 flex flex-col items-center z-10">
+            <div className="p-6 rounded-full bg-gray-200/50 dark:bg-white/5 mb-4 backdrop-blur-sm">
+              <Upload size={48} className="opacity-50" />
             </div>
-            <p class="font-mono text-sm tracking-wider uppercase">{texts.noSignal}</p>
-            <p class="text-xs opacity-60 mt-2">{texts.uploadToInit}</p>
+            <p className="font-mono text-sm tracking-wider uppercase">{texts.noSignal}</p>
+            <p className="text-xs opacity-60 mt-2">{texts.uploadToInit}</p>
           </div>
         )}
-        <canvas ref={canvasRef} class="hidden" />
+        <canvas ref={canvasRef} className="hidden" />
       </div>
 
       {/* Glass Controls Bar */}
-      <div class="h-auto min-h-[100px] z-20 bg-white/80 dark:bg-dark-900/80 backdrop-blur-xl border-t border-gray-200 dark:border-white/5 p-4 flex flex-col gap-4 transition-colors">
+      <div className="h-auto min-h-[100px] z-20 bg-white/80 dark:bg-dark-900/80 backdrop-blur-xl border-t border-gray-200 dark:border-white/5 p-4 flex flex-col gap-4 transition-colors">
         
         {/* Scrubber */}
-        <div class="flex items-center gap-4">
-          <span class="text-xs font-mono w-14 text-right text-brand-600 dark:text-brand-400">{currentTime.toFixed(2)}s</span>
-          <div class="relative flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden group/scrubber cursor-pointer">
+        <div className="flex items-center gap-4">
+          <span className="text-xs font-mono w-14 text-right text-brand-600 dark:text-brand-400">{currentTime.toFixed(2)}s</span>
+          <div className="relative flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden group/scrubber cursor-pointer">
              <input
               type="range"
               min="0"
@@ -296,38 +296,38 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
               value={currentTime}
               onChange={handleSeek}
               disabled={!videoSrc || isBatchProcessing}
-              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
             {/* Progress Fill */}
             <div 
-              class="h-full bg-brand-500 rounded-full relative transition-all"
+              className="h-full bg-brand-500 rounded-full relative transition-all"
               style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
             >
               {/* Scrubber Handle */}
-              <div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-white shadow rounded-full scale-0 group-hover/scrubber:scale-100 transition-transform"></div>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-white shadow rounded-full scale-0 group-hover/scrubber:scale-100 transition-transform"></div>
             </div>
           </div>
-          <span class="text-xs font-mono w-14 text-gray-500">{duration.toFixed(2)}s</span>
+          <span className="text-xs font-mono w-14 text-gray-500">{duration.toFixed(2)}s</span>
         </div>
 
         {/* Action Controls */}
-        <div class="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           
           {/* Left: Playback Controls */}
-          <div class="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <button 
               onClick={changePlaybackRate}
-              class="h-9 px-3 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-xs font-mono font-bold text-gray-600 dark:text-gray-300 transition-colors border border-gray-200 dark:border-white/5"
+              className="h-9 px-3 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-xs font-mono font-bold text-gray-600 dark:text-gray-300 transition-colors border border-gray-200 dark:border-white/5"
             >
               {playbackRate}x
             </button>
             
-            <div class="h-6 w-px bg-gray-300 dark:bg-white/10 mx-1"></div>
+            <div className="h-6 w-px bg-gray-300 dark:bg-white/10 mx-1"></div>
 
             <button
               onClick={() => stepFrame('backward')}
               disabled={!videoSrc}
-              class="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
               title="-1 Frame"
             >
               <SkipBack size={18} />
@@ -336,15 +336,15 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
             <button
               onClick={togglePlay}
               disabled={!videoSrc || isBatchProcessing}
-              class="w-12 h-12 flex items-center justify-center rounded-full bg-slate-900 dark:bg-white text-white dark:text-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-500/10 disabled:opacity-50 disabled:active:scale-100"
+              className="w-12 h-12 flex items-center justify-center rounded-full bg-slate-900 dark:bg-white text-white dark:text-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-500/10 disabled:opacity-50 disabled:active:scale-100"
             >
-              {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" class="ml-0.5" />}
+              {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
             </button>
 
             <button
               onClick={() => stepFrame('forward')}
               disabled={!videoSrc}
-              class="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
               title="+1 Frame"
             >
               <SkipForward size={18} />
@@ -352,30 +352,30 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
           </div>
 
           {/* Right: Capture & Batch Controls */}
-          <div class="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             
             {/* Batch Settings Panel */}
-            <div class="hidden md:flex items-center p-1 rounded-xl bg-gray-100 dark:bg-black/40 border border-gray-200 dark:border-white/10 shadow-inner">
+            <div className="hidden md:flex items-center p-1 rounded-xl bg-gray-100 dark:bg-black/40 border border-gray-200 dark:border-white/10 shadow-inner">
               <button 
                 onClick={toggleBatchMode}
-                class="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-white/10 hover:shadow-sm flex items-center gap-2 transition-all min-w-[95px]"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-white/10 hover:shadow-sm flex items-center gap-2 transition-all min-w-[95px]"
               >
-                <span class={`${batchMode === 'smart' ? 'text-purple-500' : 'text-brand-500'}`}>
+                <span className={`${batchMode === 'smart' ? 'text-purple-500' : 'text-brand-500'}`}>
                   {getBatchModeIcon()}
                 </span>
                 {getBatchModeLabel()}
               </button>
               
-              <div class="flex items-center px-1 border-l border-gray-200 dark:border-white/10 ml-1 pl-1">
+              <div className="flex items-center px-1 border-l border-gray-200 dark:border-white/10 ml-1 pl-1">
                 <input 
                   type="number" 
                   min={batchMode === 'count' ? "1" : "0.1"} 
                   step={batchMode === 'count' ? "1" : "0.1"}
                   value={batchValue}
                   onChange={(e: any) => setBatchValue(Number(e.target.value))}
-                  class="w-10 bg-transparent text-center focus:text-brand-600 dark:focus:text-brand-400 outline-none text-sm font-mono text-gray-700 dark:text-gray-200 py-1"
+                  className="w-10 bg-transparent text-center focus:text-brand-600 dark:focus:text-brand-400 outline-none text-sm font-mono text-gray-700 dark:text-gray-200 py-1"
                 />
-                <span class="text-[10px] text-gray-400 uppercase font-mono mt-0.5 min-w-[20px]">
+                <span className="text-[10px] text-gray-400 uppercase font-mono mt-0.5 min-w-[20px]">
                   {getBatchUnitLabel()}
                 </span>
               </div>
@@ -383,7 +383,7 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
               <button
                 onClick={handleBatchCapture}
                 disabled={!videoSrc || isBatchProcessing}
-                class={`ml-1 p-2 rounded-lg hover:bg-white dark:hover:bg-white/10 transition-colors shadow-sm ${
+                className={`ml-1 p-2 rounded-lg hover:bg-white dark:hover:bg-white/10 transition-colors shadow-sm ${
                   isBatchProcessing ? 'text-brand-500 animate-pulse' : 'text-gray-500 dark:text-gray-400'
                 }`}
                 title={texts.startBatch}
@@ -396,10 +396,10 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
             <button
               onClick={handleSingleCapture}
               disabled={!videoSrc || isBatchProcessing}
-              class="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white rounded-xl font-medium shadow-lg shadow-brand-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
+              className="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white rounded-xl font-medium shadow-lg shadow-brand-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
             >
-              <ImagePlus size={20} class="group-hover:rotate-12 transition-transform" />
-              <span class="hidden sm:inline">{texts.snapshot}</span>
+              <ImagePlus size={20} className="group-hover:rotate-12 transition-transform" />
+              <span className="hidden sm:inline">{texts.snapshot}</span>
             </button>
           </div>
         </div>

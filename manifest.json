@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "FrameCut AI - Smart Video Splitter",
+  "version": "1.0.0",
+  "description": "Professional video frame extraction tool with Gemini AI analysis. Batch capture, smart scene detection, and more.",
+  "permissions": [
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://api.country.is/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open FrameCut AI"
+  },
+  "side_panel": {
+    "default_path": "index.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval' https://cdn.tailwindcss.com https://aistudiocdn.com; object-src 'self';"
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
