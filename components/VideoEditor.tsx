@@ -4,20 +4,22 @@ import {
   SkipBack, SkipForward, Hash, Clock, Zap,
   Maximize, ChevronDown
 } from './Icons';
-import { ExtractedFrame, VideoMeta } from '../types';
+import { ExtractedFrame, VideoMeta, I18nTexts } from '../types';
 
 interface VideoEditorProps {
   videoSrc: string | null;
   onVideoLoaded: (meta: VideoMeta) => void;
   onFrameCaptured: (frame: ExtractedFrame) => void;
   onBatchComplete: () => void;
+  texts: I18nTexts;
 }
 
 export const VideoEditor: React.FC<VideoEditorProps> = ({ 
   videoSrc, 
   onVideoLoaded, 
   onFrameCaptured,
-  onBatchComplete
+  onBatchComplete,
+  texts
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -232,9 +234,9 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
   };
 
   const getBatchModeLabel = () => {
-    if (batchMode === 'interval') return 'Interval';
-    if (batchMode === 'count') return 'Count';
-    return 'Smart AI';
+    if (batchMode === 'interval') return texts.batchInterval;
+    if (batchMode === 'count') return texts.batchCount;
+    return texts.batchSmart;
   };
 
   const getBatchModeIcon = () => {
@@ -272,8 +274,8 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
             <div class="p-6 rounded-full bg-gray-200/50 dark:bg-white/5 mb-4 backdrop-blur-sm">
               <Upload size={48} class="opacity-50" />
             </div>
-            <p class="font-mono text-sm tracking-wider uppercase">No Signal Input</p>
-            <p class="text-xs opacity-60 mt-2">Upload video to initialize system</p>
+            <p class="font-mono text-sm tracking-wider uppercase">{texts.noSignal}</p>
+            <p class="text-xs opacity-60 mt-2">{texts.uploadToInit}</p>
           </div>
         )}
         <canvas ref={canvasRef} class="hidden" />
@@ -384,7 +386,7 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
                 class={`ml-1 p-2 rounded-lg hover:bg-white dark:hover:bg-white/10 transition-colors shadow-sm ${
                   isBatchProcessing ? 'text-brand-500 animate-pulse' : 'text-gray-500 dark:text-gray-400'
                 }`}
-                title="Start Batch Extraction"
+                title={texts.startBatch}
               >
                 <Layers size={16} />
               </button>
@@ -397,7 +399,7 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
               class="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white rounded-xl font-medium shadow-lg shadow-brand-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
             >
               <ImagePlus size={20} class="group-hover:rotate-12 transition-transform" />
-              <span class="hidden sm:inline">Snapshot</span>
+              <span class="hidden sm:inline">{texts.snapshot}</span>
             </button>
           </div>
         </div>

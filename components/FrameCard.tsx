@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExtractedFrame } from '../types';
+import { ExtractedFrame, I18nTexts } from '../types';
 import { Download, Trash2, Sparkles, Check } from './Icons';
 
 interface FrameCardProps {
@@ -8,6 +8,7 @@ interface FrameCardProps {
   onToggleSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onAnalyze: (id: string) => void;
+  texts: I18nTexts;
 }
 
 export const FrameCard: React.FC<FrameCardProps> = ({ 
@@ -15,7 +16,8 @@ export const FrameCard: React.FC<FrameCardProps> = ({
   isSelected,
   onToggleSelect,
   onDelete, 
-  onAnalyze 
+  onAnalyze,
+  texts
 }) => {
   
   const formatTime = (seconds: number) => {
@@ -80,14 +82,14 @@ export const FrameCard: React.FC<FrameCardProps> = ({
           <button 
             onClick={handleDownload}
             class="p-1.5 bg-white/90 dark:bg-black/60 hover:bg-brand-500 hover:text-white dark:hover:bg-brand-500 rounded-md text-slate-700 dark:text-slate-200 backdrop-blur-md shadow-lg transition-colors border border-gray-200 dark:border-white/10"
-            title="Download Frame"
+            title={texts.downloadFrame}
           >
             <Download size={12} />
           </button>
           <button 
             onClick={handleDelete}
             class="p-1.5 bg-white/90 dark:bg-black/60 hover:bg-red-500 hover:text-white dark:hover:bg-red-500 rounded-md text-slate-700 dark:text-slate-200 backdrop-blur-md shadow-lg transition-colors border border-gray-200 dark:border-white/10"
-            title="Delete Frame"
+            title={texts.deleteFrame}
           >
             <Trash2 size={12} />
           </button>
@@ -106,7 +108,7 @@ export const FrameCard: React.FC<FrameCardProps> = ({
         {frame.analysis ? (
           <div class="text-xs text-slate-600 dark:text-slate-300">
             <span class="font-semibold text-brand-600 dark:text-brand-400 mb-1 flex items-center gap-1.5 uppercase tracking-wider text-[10px]">
-              <Sparkles size={10} /> AI Analysis
+              <Sparkles size={10} /> {texts.aiAnalysis}
             </span>
             <p class="line-clamp-2 hover:line-clamp-none transition-all leading-relaxed opacity-90">{frame.analysis}</p>
           </div>
@@ -119,12 +121,12 @@ export const FrameCard: React.FC<FrameCardProps> = ({
             {frame.isAnalyzing ? (
               <span class="flex items-center gap-2">
                 <div class="w-2 h-2 bg-brand-500 rounded-full animate-ping"></div>
-                Analyzing...
+                {texts.analyzing}
               </span>
             ) : (
               <>
                 <Sparkles size={12} class="text-purple-500 group-hover:text-purple-600 dark:text-purple-400" />
-                <span>Analyze Frame</span>
+                <span>{texts.analyzeFrame}</span>
               </>
             )}
           </button>

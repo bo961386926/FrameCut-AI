@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import JSZip from 'jszip';
 import { VideoEditor } from './components/VideoEditor';
 import { FrameCard } from './components/FrameCard';
-import { ExtractedFrame, VideoMeta } from './types';
+import { ExtractedFrame, VideoMeta, Language } from './types';
 import { 
   Film, Upload, Trash2, Download, 
   CheckSquare, Square, XCircle, Archive,
   Sun, Moon, LayoutGrid
 } from './components/Icons';
 import { analyzeFrame } from './services/geminiService';
+import { detectLanguage, translations } from './services/i18nService';
 
 const App = () => {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
@@ -18,6 +19,14 @@ const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isZipping, setIsZipping] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [currentLang, setCurrentLang] = useState<Language>('en');
+
+  // Load language settings on mount
+  useEffect(() => {
+    detectLanguage().then(lang => setCurrentLang(lang));
+  }, []);
+
+  const t = translations[currentLang];
 
   // Initialize theme from system or local storage
   useEffect(() => {
@@ -56,7 +65,7 @@ const App = () => {
     // Capture the current selection in a Set for O(1) lookups
     const idsToDelete = new Set(selectedIds);
     
-    if (window.confirm(`Are you sure you want to delete ${idsToDelete.size} selected frames?`)) {
+    if (window.confirm(t.deleteConfirm(idsToDelete.size))) {
       // Filter out frames that are in the delete set
       setFrames(currentFrames => currentFrames.filter(frame => !idsToDelete.has(frame.id)));
       setSelectedIds([]);
@@ -64,7 +73,7 @@ const App = () => {
   };
 
   const handleClearAll = () => {
-    if (window.confirm('Are you sure you want to clear all extracted frames?')) {
+    if (window.confirm(t.clearAllConfirm)) {
       setFrames([]);
       setSelectedIds([]);
     }
@@ -132,7 +141,14 @@ const App = () => {
 
     setFrames(prev => prev.map(f => f.id === id ? { ...f, isAnalyzing: true } : f));
     
-    const analysis = await analyzeFrame(frame.dataUrl);
+    // Pass current language instruction to the AI
+    const prompt = currentLang === 'zh-CN' 
+      ? "详细描述这个视频帧的内容，适合作为标题或说明文字，请用简体中文回答。"
+      : currentLang === 'zh-TW'
+        ? "詳細描述這個視頻幀的內容，適合作為標題或說明文字，請用繁體中文回答。"
+        : "Describe this video frame in detail suitable for a caption.";
+
+    const analysis = await analyzeFrame(frame.dataUrl, prompt);
     
     setFrames(prev => prev.map(f => f.id === id ? { ...f, isAnalyzing: false, analysis } : f));
   };
@@ -148,7 +164,7 @@ const App = () => {
         {/* App Logo */}
         <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-white/5">
           <Film class="text-brand-500 mr-2" />
-          {isSidebarOpen && <span class="font-bold text-xl tracking-tight text-slate-800 dark:text-slate-100">FrameCut<span class="text-brand-500">.AI</span></span>}
+          {isSidebarOpen && <span class="font-bold text-xl tracking-tight text-slate-800 dark:text-slate-100">{t.appTitle}</span>}
         </div>
 
         {/* Video Upload Section */}
@@ -162,18 +178,18 @@ const App = () => {
             <div class={`p-3 rounded-full bg-gray-100 dark:bg-white/5 group-hover:scale-110 transition-transform ${!isSidebarOpen && 'p-2'}`}>
               <Upload class="text-gray-400 group-hover:text-brand-500 transition-colors" size={isSidebarOpen ? 24 : 20} />
             </div>
-            {isSidebarOpen && <span class="mt-3 text-xs font-medium text-gray-500 dark:text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400">Click to Upload Video</span>}
+            {isSidebarOpen && <span class="mt-3 text-xs font-medium text-gray-500 dark:text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400">{t.uploadClick}</span>}
           </label>
         </div>
 
         {/* Info Section */}
         {isSidebarOpen && videoMeta && (
           <div class="px-6 py-4 mx-4 mb-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5">
-            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Signal Data</h3>
+            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">{t.signalData}</h3>
             <div class="space-y-2 text-xs font-mono text-gray-500 dark:text-slate-400">
-              <p class="flex justify-between"><span>DURATION</span> <span class="text-gray-800 dark:text-slate-200">{videoMeta.duration.toFixed(2)}s</span></p>
-              <p class="flex justify-between"><span>DIMENSIONS</span> <span class="text-gray-800 dark:text-slate-200">{videoMeta.width}x{videoMeta.height}</span></p>
-              <p class="flex justify-between"><span>FRAMES</span> <span class="text-brand-500">{frames.length}</span></p>
+              <p class="flex justify-between"><span>{t.duration}</span> <span class="text-gray-800 dark:text-slate-200">{videoMeta.duration.toFixed(2)}s</span></p>
+              <p class="flex justify-between"><span>{t.dimensions}</span> <span class="text-gray-800 dark:text-slate-200">{videoMeta.width}x{videoMeta.height}</span></p>
+              <p class="flex justify-between"><span>{t.frames}</span> <span class="text-brand-500">{frames.length}</span></p>
             </div>
           </div>
         )}
@@ -185,7 +201,7 @@ const App = () => {
           <button 
             onClick={toggleTheme}
             class="p-2 rounded-lg text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-            title="Toggle Theme"
+            title={t.toggleTheme}
           >
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
@@ -194,7 +210,7 @@ const App = () => {
              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
              class="p-2 rounded-lg text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-xs font-medium"
           >
-            {isSidebarOpen ? 'Collapse' : '»'}
+            {isSidebarOpen ? t.collapse : t.expand}
           </button>
         </div>
       </div>
@@ -209,6 +225,7 @@ const App = () => {
             onVideoLoaded={setVideoMeta}
             onFrameCaptured={handleFrameCaptured}
             onBatchComplete={() => {}}
+            texts={t}
           />
         </div>
 
@@ -225,8 +242,8 @@ const App = () => {
                   <LayoutGrid size={16} />
                 </div>
                 <div>
-                  <h2 class="font-semibold text-sm text-gray-800 dark:text-slate-200">Frame Gallery</h2>
-                  <p class="text-[10px] text-gray-500 dark:text-slate-500">Manage captured snapshots</p>
+                  <h2 class="font-semibold text-sm text-gray-800 dark:text-slate-200">{t.galleryTitle}</h2>
+                  <p class="text-[10px] text-gray-500 dark:text-slate-500">{t.gallerySubtitle}</p>
                 </div>
               </div>
               
@@ -244,7 +261,7 @@ const App = () => {
                       <Square size={16} />
                     )}
                     <span class="hidden sm:inline">
-                      {selectedIds.length === frames.length ? 'Deselect All' : 'Select All'}
+                      {selectedIds.length === frames.length ? t.deselectAll : t.selectAll}
                     </span>
                   </button>
                 </>
@@ -256,7 +273,7 @@ const App = () => {
               {selectedIds.length > 0 ? (
                 <div class="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
                   <span class="text-xs font-mono text-gray-500 dark:text-slate-500 mr-2 hidden sm:inline">
-                    <span class="text-brand-500 font-bold">{selectedIds.length}</span> SELECTED
+                    <span class="text-brand-500 font-bold">{selectedIds.length}</span> {t.selected}
                   </span>
                   
                   <button 
@@ -269,7 +286,7 @@ const App = () => {
                     ) : (
                       <Archive size={14} />
                     )}
-                    Download
+                    {t.download}
                   </button>
                   
                   <button 
@@ -277,7 +294,7 @@ const App = () => {
                     class="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors"
                   >
                     <Trash2 size={14} />
-                    Delete
+                    {t.delete}
                   </button>
 
                   <button 
@@ -294,7 +311,7 @@ const App = () => {
                     onClick={handleClearAll}
                     class="text-xs font-medium text-gray-500 hover:text-red-500 flex items-center gap-1.5 px-3 py-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                   >
-                    <Trash2 size={14} /> Clear All
+                    <Trash2 size={14} /> {t.clearAll}
                   </button>
                 )
               )}
@@ -308,8 +325,8 @@ const App = () => {
                 <div class="w-16 h-16 mb-4 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center">
                   <LayoutGrid size={32} class="opacity-50" />
                 </div>
-                <p class="font-medium">Gallery Empty</p>
-                <p class="text-xs mt-1 opacity-70">Extract frames to populate the grid</p>
+                <p class="font-medium">{t.galleryEmpty}</p>
+                <p class="text-xs mt-1 opacity-70">{t.galleryEmptyHint}</p>
               </div>
             ) : (
               <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 pb-20">
@@ -321,6 +338,7 @@ const App = () => {
                     onToggleSelect={toggleSelect}
                     onDelete={handleDeleteFrame}
                     onAnalyze={handleAnalyzeFrame}
+                    texts={t}
                   />
                 ))}
               </div>
